@@ -199,8 +199,6 @@ const Layout = ({ children, onLogout, currentUser, userRole }) => {
     { id: 'switches', label: 'Commutateurs', icon: RouterIcon },
     { id: 'patchPanels', label: 'Panneaux de brassage', icon: LayoutIcon },
     { id: 'accessPoints', label: 'Points d\'accès', icon: WifiIcon },
-    { id: 'unifiDevices', label: 'Appareils UniFi', icon: RadioIcon },
-    { id: 'unifiAuth', label: 'Configuration UniFi', icon: ShieldCheckIcon },
     { id: 'interventions', label: 'Rapport d\'interventions', icon: ClipboardListIcon },
     { id: 'users', label: 'Utilisateurs', icon: ShieldCheckIcon },
     { id: 'audit', label: 'Audit', icon: ShieldCheckIcon }
