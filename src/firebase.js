@@ -6,13 +6,13 @@ import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBloQQvcd1lMANCU5Frdv7XIFB6vLI74Pk",
-  authDomain: "focus-melody-467918-u9.firebaseapp.com",
-  projectId: "focus-melody-467918-u9",
-  storageBucket: "focus-melody-467918-u9.firebasestorage.app",
-  messagingSenderId: "289948248371",
-  appId: "1:289948248371:web:089fc30fdeccb2beecf646",
-  measurementId: "G-3BFXRCW10N"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 const app = initializeApp(firebaseConfig);
