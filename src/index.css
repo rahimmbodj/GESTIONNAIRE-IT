@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --main-color: #2563eb;
+}
+
+/* Styles responsives globaux */
+@layer base {
+  html {
+    @apply antialiased;
+  }
+  
+  body {
+    @apply text-gray-800 bg-gray-50;
+  }
+}
+
+@layer components {
+  /* Cards responsives */
+  .responsive-card {
+    @apply bg-white rounded-lg shadow-sm p-4 md:p-6;
+  }
+
+  /* Grilles responsives */
+  .responsive-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6;
+  }
+
+  /* Marges et espacements adaptatifs */
+  .section-padding {
+    @apply py-4 md:py-6 lg:py-8;
+  }
+
+  /* En-têtes de section responsives */
+  .section-header {
+    @apply mb-4 md:mb-6;
+  }
+
+  .section-title {
+    @apply text-xl md:text-2xl font-bold text-gray-800;
+  }
+
+  /* Boutons adaptifs */
+  .btn {
+    @apply px-4 py-2 md:px-6 md:py-3 rounded-lg transition-colors duration-200;
+  }
+
+  /* Formulaires responsifs */
+  .form-group {
+    @apply mb-4 md:mb-6;
+  }
+
+  .form-label {
+    @apply block text-sm font-medium text-gray-700 mb-1;
+  }
+
+  .form-input {
+    @apply w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500;
+  }
+}
+
+/* Optimisations pour les appareils tactiles */
+@media (hover: none) {
+  .btn:hover {
+    @apply transform-none;
+  }
+}
+

@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnostic et Nettoyage Avancé des Points d'Accès</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; }
+        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        button { background: #007bff; color: white; border: none; padding: 12px 24px; border-radius: 5px; cursor: pointer; font-size: 16px; margin: 10px 5px; }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        .log { background: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; border-radius: 5px; margin: 20px 0; max-height: 500px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+        .progress { background: #e9ecef; border-radius: 5px; height: 20px; margin: 20px 0; overflow: hidden; }
+        .progress-bar { background: #007bff; height: 100%; width: 0%; transition: width 0.3s ease; }
+        .details { background: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .field-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 10px 0; }
+        .field-item { background: #e9ecef; padding: 8px; border-radius: 5px; font-family: monospace; font-size: 11px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>   Diagnostic et Nettoyage Avancé des Points d'Accès</h1>
+        <h2>Suppression des champs Sécurité, Canal, Puissance et Signal</h2>
+        
+        <div class="warning">
+            <strong>⚠️ ATTENTION :</strong> Cette opération va supprimer définitivement les champs suivants :
+            <ul>
+                <li><strong>security</strong> (Sécurité)</li>
+                <li><strong>channel</strong> (Canal)</li>
+                <li><strong>power</strong> (Puissance)</li>
+                <li><strong>signalStrength</strong> (Force du signal)</li>
+            </ul>
+            <strong>Cette action est irréversible !</strong>
+        </div>
+
+        <div>
+            <button onclick="diagnoseAccessPoints()">   Diagnostic Complet</button>
+            <button onclick="cleanAccessPoints()">🧹 Nettoyer TOUS les Points d'Accès</button>
+            <button onclick="cleanOneByOne()">   Nettoyer Un par Un</button>
+            <button onclick="clearLog()">🗑️ Effacer les logs</button>
+        </div>
+
+        <div class="progress" id="progressContainer" style="display: none;">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <div class="details" id="details" style="display: none;">
+            <h3>   Détails des Champs à Supprimer</h3>
+            <div id="fieldDetails"></div>
+        </div>
+
+        <div class="log" id="log"></div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <script>
+        // Configuration Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBloQQvcd1lMANCU5Frdv7XIFB6vLI74Pk",
+            authDomain: "focus-melody-467918-u9.firebaseapp.com",
+            projectId: "focus-melody-467918-u9",
+            storageBucket: "focus-melody-467918-u9.firebasestorage.app",
+            messagingSenderId: "289948248371",
+            appId: "1:289948248371:web:089fc30fdeccb2beecf646",
+            measurementId: "G-3BFXRCW10N"
+        };
+
+        // Initialiser Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = type;
+            logEntry.innerHTML = `[${timestamp}] ${message}`;
+            logDiv.appendChild(logEntry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(`[${timestamp}] ${message}`); // Log aussi dans la console
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+            document.getElementById('details').style.display = 'none';
+        }
+
+        async function diagnoseAccessPoints() {
+            try {
+                log('🔍 Début du diagnostic complet des points d\'accès...', 'info');
+                
+                const querySnapshot = await db.collection('accessPoints').get();
+                let totalAPs = 0;
+                let apsWithOldFields = 0;
+                let fieldStats = { security: 0, channel: 0, power: 0, signalStrength: 0 };
+                let problematicDocs = [];
+                
+                querySnapshot.forEach(doc => {
+                    totalAPs++;
+                    const data = doc.data();
+                    let hasOldFields = false;
+                    let docFields = [];
+                    
+                    if (data.security) { fieldStats.security++; hasOldFields = true; docFields.push('security'); }
+                    if (data.channel) { fieldStats.channel++; hasOldFields = true; docFields.push('channel'); }
+                    if (data.power) { fieldStats.power++; hasOldFields = true; docFields.push('power'); }
+                    if (data.signalStrength) { fieldStats.signalStrength++; hasOldFields = true; docFields.push('signalStrength'); }
+                    
+                    if (hasOldFields) {
+                        apsWithOldFields++;
+                        problematicDocs.push({ id: doc.id, fields: docFields, data: data });
+                        log(`⚠️ ${doc.id}: contient ${docFields.join(', ')}`, 'warning');
+                    }
+                });
+                
+                log(`   RÉSUMÉ DIAGNOSTIC:`, 'info');
+                log(`   Total: ${totalAPs} points d'accès`, 'info');
+                log(`   Avec anciens champs: ${apsWithOldFields}`, 'warning');
+                log(`   Champs trouvés:`, 'info');
+                log(`     - security: ${fieldStats.security}`, 'info');
+                log(`     - channel: ${fieldStats.channel}`, 'info');
+                log(`     - power: ${fieldStats.power}`, 'info');
+                log(`     - signalStrength: ${fieldStats.signalStrength}`, 'info');
+                
+                // Afficher les détails
+                if (problematicDocs.length > 0) {
+                    const detailsDiv = document.getElementById('details');
+                    const fieldDetailsDiv = document.getElementById('fieldDetails');
+                    
+                    let detailsHTML = '<div class="field-list">';
+                    problematicDocs.slice(0, 20).forEach(doc => {
+                        detailsHTML += `<div class="field-item">${doc.id}: ${doc.fields.join(', ')}</div>`;
+                    });
+                    if (problematicDocs.length > 20) {
+                        detailsHTML += `<div class="field-item">... et ${problematicDocs.length - 20} autres</div>`;
+                    }
+                    detailsHTML += '</div>';
+                    
+                    fieldDetailsDiv.innerHTML = detailsHTML;
+                    detailsDiv.style.display = 'block';
+                }
+                
+            } catch (error) {
+                log(`❌ Erreur lors du diagnostic: ${error.message}`, 'error');
+                console.error('Erreur complète:', error);
+            }
+        }
+
+        async function cleanAccessPoints() {
+            try {
+                log('   Début du nettoyage MASSIF de tous les points d\'accès...', 'info');
+                
+                const querySnapshot = await db.collection('accessPoints').get();
+                const totalAPs = querySnapshot.size;
+                let cleanedAPs = 0;
+                let errors = 0;
+                
+                if (totalAPs === 0) {
+                    log('ℹ️ Aucun point d\'accès trouvé', 'info');
+                    return;
+                }
+                
+                log(`   ${totalAPs} points d'accès trouvés, début du nettoyage...`, 'info');
+                
+                // Utiliser un batch pour les mises à jour
+                const batch = db.batch();
+                let batchCount = 0;
+                const BATCH_LIMIT = 500; // Limite Firestore
+                
+                for (const doc of querySnapshot.docs) {
+                    try {
+                        const data = doc.data();
+                        const docRef = db.collection('accessPoints').doc(doc.id);
+                        
+                        // Créer un nouvel objet sans les anciens champs
+                        const cleanedData = { ...data };
+                        delete cleanedData.security;
+                        delete cleanedData.channel;
+                        delete cleanedData.power;
+                        delete cleanedData.signalStrength;
+                        
+                        // Ajouter la mise à jour au batch
+                        batch.update(docRef, cleanedData);
+                        batchCount++;
+                        cleanedAPs++;
+                        
+                        // Si le batch est plein, l'exécuter
+                        if (batchCount >= BATCH_LIMIT) {
+                            log(`   Exécution du batch ${Math.ceil(cleanedAPs / BATCH_LIMIT)}...`, 'info');
+                            await batch.commit();
+                            batchCount = 0;
+                        }
+                        
+                    } catch (error) {
+                        log(`❌ Erreur lors du nettoyage de ${doc.id}: ${error.message}`, 'error');
+                        errors++;
+                    }
+                }
+                
+                // Exécuter le dernier batch
+                if (batchCount > 0) {
+                    log(`💾 Exécution du dernier batch...`, 'info');
+                    await batch.commit();
+                }
+                
+                log(`✅ NETTOYAGE MASSIF TERMINÉ !`, 'success');
+                log(`   Points d'accès nettoyés: ${cleanedAPs}`, 'success');
+                log(`   Erreurs: ${errors}`, errors > 0 ? 'error' : 'success');
+                log(`   Champs supprimés: security, channel, power, signalStrength`, 'success');
+                
+                // Vérifier le résultat
+                await diagnoseAccessPoints();
+                
+            } catch (error) {
+                log(`❌ Erreur lors du nettoyage massif: ${error.message}`, 'error');
+                console.error('Erreur complète:', error);
+            }
+        }
+
+        async function cleanOneByOne() {
+            try {
+                log('   Début du nettoyage un par un (plus lent mais plus sûr)...', 'info');
+                
+                const querySnapshot = await db.collection('accessPoints').get();
+                const totalAPs = querySnapshot.size;
+                let cleanedAPs = 0;
+                let errors = 0;
+                
+                if (totalAPs === 0) {
+                    log('ℹ️ Aucun point d\'accès trouvé', 'info');
+                    return;
+                }
+                
+                log(`   ${totalAPs} points d'accès trouvés, nettoyage un par un...`, 'info');
+                
+                for (const doc of querySnapshot.docs) {
+                    try {
+                        const data = doc.data();
+                        const docRef = db.collection('accessPoints').doc(doc.id);
+                        
+                        // Créer un nouvel objet sans les anciens champs
+                        const cleanedData = { ...data };
+                        delete cleanedData.security;
+                        delete cleanedData.channel;
+                        delete cleanedData.power;
+                        delete cleanedData.signalStrength;
+                        
+                        // Mettre à jour le document
+                        await docRef.update(cleanedData);
+                        cleanedAPs++;
+                        
+                        if (cleanedAPs % 10 === 0) {
+                            log(`✅ ${cleanedAPs}/${totalAPs} points d'accès nettoyés...`, 'info');
+                        }
+                        
+                    } catch (error) {
+                        log(`❌ Erreur lors du nettoyage de ${doc.id}: ${error.message}`, 'error');
+                        errors++;
+                    }
+                }
+                
+                log(`✅ NETTOYAGE UN PAR UN TERMINÉ !`, 'success');
+                log(`   Points d'accès nettoyés: ${cleanedAPs}`, 'success');
+                log(`   Erreurs: ${errors}`, errors > 0 ? 'error' : 'success');
+                
+                // Vérifier le résultat
+                await diagnoseAccessPoints();
+                
+            } catch (error) {
+                log(`❌ Erreur lors du nettoyage un par un: ${error.message}`, 'error');
+                console.error('Erreur complète:', error);
+            }
+        }
+
+        // Vérification automatique au chargement
+        window.addEventListener('load', () => {
+            log('🚀 Outil de diagnostic et nettoyage avancé chargé', 'info');
+            log('📋 Commencez par "Diagnostic Complet" pour analyser la situation', 'info');
+        });
+    </script>
+</body>
+</html>

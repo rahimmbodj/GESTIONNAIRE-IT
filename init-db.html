@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Initialisation Base de Données - CROUS Réseau</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .step {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 10px;
+            border-left: 4px solid #4CAF50;
+        }
+        .step h3 {
+            margin-top: 0;
+            color: #4CAF50;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background: rgba(76, 175, 80, 0.2); color: #4CAF50; }
+        .error { background: rgba(244, 67, 54, 0.2); color: #f44336; }
+        .info { background: rgba(33, 150, 243, 0.2); color: #2196F3; }
+        .log {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Initialisation Base de Données CROUS Réseau</h1>
+        
+        <div class="step">
+            <h3>📋 Étape 1 : Configuration Firebase</h3>
+            <p>Vérification de la connexion à Firebase...</p>
+            <button onclick="testConnection()">🔗 Tester la Connexion</button>
+            <div id="connectionStatus"></div>
+        </div>
+
+        <div class="step">
+            <h3>👥 Étape 2 : Création des Utilisateurs de Test</h3>
+            <p>Créer des comptes utilisateurs avec différents rôles</p>
+            <button onclick="createTestUsers()" id="usersBtn" disabled>👤 Créer Utilisateurs Test</button>
+            <div id="usersStatus"></div>
+        </div>
+
+        <div class="step">
+            <h3>📁 Étape 3 : Création des Bâtiments</h3>
+            <p>Ajouter des bâtiments de test à la base de données</p>
+            <button onclick="createBuildings()" id="buildingsBtn" disabled>🏢 Créer Bâtiments</button>
+            <div id="buildingsStatus"></div>
+        </div>
+
+        <div class="step">
+            <h3>🔌 Étape 4 : Création des Équipements</h3>
+            <p>Ajouter des commutateurs et points d'accès</p>
+            <button onclick="createEquipment()" id="equipmentBtn" disabled>⚡ Créer Équipements</button>
+            <div id="equipmentStatus"></div>
+        </div>
+
+        <div class="step">
+            <h3>🔧 Étape 5 : Création des Interventions</h3>
+            <p>Ajouter des interventions de test</p>
+            <button onclick="createInterventions()" id="interventionsBtn" disabled>📝 Créer Interventions</button>
+            <div id="interventionsStatus"></div>
+        </div>
+
+        <div class="step">
+            <h3>🎯 Étape 6 : Test Complet</h3>
+            <p>Vérifier que toutes les données sont créées</p>
+            <button onclick="testComplete()" id="testBtn" disabled>🧪 Test Complet</button>
+            <div id="testStatus"></div>
+        </div>
+
+        <div class="log" id="log">
+            <strong>📝 Journal d'initialisation :</strong><br>
+            En attente de démarrage...
+        </div>
+    </div>
+
+    <script>
+        // Configuration Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBloQQvcd1lMANCU5Frdv7XIFB6vLI74Pk",
+            authDomain: "focus-melody-467918-u9.firebaseapp.com",
+            projectId: "focus-melody-467918-u9",
+            storageBucket: "focus-melody-467918-u9.firebasestorage.app",
+            messagingSenderId: "289948248371",
+            appId: "1:289948248371:web:089fc30fdeccb2beecf646",
+            measurementId: "G-3BFXRCW10N"
+        };
+
+        // Initialiser Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let buildingIds = [];
+        let userIds = [];
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `<div class="status ${type}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        async function testConnection() {
+            try {
+                log('🔗 Test de connexion Firebase...', 'info');
+                const testDoc = await db.collection('test').add({
+                    test: true,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                await testDoc.delete();
+                log('✅ Connexion Firebase réussie !', 'success');
+                document.getElementById('connectionStatus').innerHTML = '<div class="status success">✅ Connexion établie</div>';
+                document.getElementById('usersBtn').disabled = false;
+            } catch (error) {
+                log(`❌ Erreur de connexion: ${error.message}`, 'error');
+                document.getElementById('connectionStatus').innerHTML = '<div class="status error">❌ Erreur de connexion</div>';
+            }
+        }
+
+        async function createTestUsers() {
+            try {
+                log('👤 Création des utilisateurs de test...', 'info');
+                
+                const users = [
+                    {
+                        displayName: 'Admin CROUS',
+                        email: 'admin@crous.fr',
+                        role: 'admin',
+                        isActive: true
+                    },
+                    {
+                        displayName: 'Superviseur Réseau',
+                        email: 'supervisor@crous.fr',
+                        role: 'supervisor',
+                        isActive: true
+                    },
+                    {
+                        displayName: 'Technicien Réseau',
+                        email: 'technician@crous.fr',
+                        role: 'technician',
+                        isActive: true
+                    }
+                ];
+
+                for (const user of users) {
+                    const docRef = await db.collection('users').add({
+                        ...user,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    userIds.push(docRef.id);
+                    log(`✅ Utilisateur créé: ${user.displayName} (${user.role})`, 'success');
+                }
+
+                document.getElementById('usersStatus').innerHTML = '<div class="status success">✅ Utilisateurs créés</div>';
+                document.getElementById('buildingsBtn').disabled = false;
+            } catch (error) {
+                log(`❌ Erreur création utilisateurs: ${error.message}`, 'error');
+                document.getElementById('usersStatus').innerHTML = '<div class="status error">❌ Erreur création utilisateurs</div>';
+            }
+        }
+
+        async function createBuildings() {
+            try {
+                log('🏢 Création des bâtiments...', 'info');
+                
+                const buildings = [
+                    {
+                        name: 'Bâtiment Principal - CROUS',
+                        address: '123 Avenue des Étudiants, 75001 Paris',
+                        floors: 5,
+                        description: 'Bâtiment principal du CROUS avec logements étudiants',
+                        status: 'active'
+                    },
+                    {
+                        name: 'Résidence Universitaire Sud',
+                        address: '456 Boulevard de l\'Université, 75014 Paris',
+                        floors: 8,
+                        description: 'Résidence moderne pour étudiants internationaux',
+                        status: 'active'
+                    },
+                    {
+                        name: 'Cité Universitaire Nord',
+                        address: '789 Rue de la Science, 75018 Paris',
+                        floors: 6,
+                        description: 'Cité universitaire avec équipements sportifs',
+                        status: 'active'
+                    }
+                ];
+
+                for (const building of buildings) {
+                    const docRef = await db.collection('buildings').add({
+                        ...building,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    buildingIds.push(docRef.id);
+                    log(`✅ Bâtiment créé: ${building.name}`, 'success');
+                }
+
+                document.getElementById('buildingsStatus').innerHTML = '<div class="status success">✅ Bâtiments créés</div>';
+                document.getElementById('equipmentBtn').disabled = false;
+            } catch (error) {
+                log(`❌ Erreur création bâtiments: ${error.message}`, 'error');
+                document.getElementById('buildingsStatus').innerHTML = '<div class="status error">❌ Erreur création bâtiments</div>';
+            }
+        }
+
+        async function createEquipment() {
+            try {
+                log('⚡ Création des équipements...', 'info');
+                
+                if (buildingIds.length === 0) {
+                    throw new Error('Aucun bâtiment créé');
+                }
+
+                const buildingId = buildingIds[0];
+
+                // Créer des commutateurs
+                const switches = [
+                    {
+                        name: 'Switch Principal - B1',
+                        model: 'Cisco Catalyst 2960',
+                        ip: '192.168.1.1',
+                        buildingId: buildingId,
+                        status: 'online',
+                        ports: 24
+                    },
+                    {
+                        name: 'Switch Étage 1 - B1',
+                        model: 'Cisco Catalyst 2960',
+                        ip: '192.168.1.2',
+                        buildingId: buildingId,
+                        status: 'online',
+                        ports: 48
+                    }
+                ];
+
+                for (const sw of switches) {
+                    await db.collection('switches').add({
+                        ...sw,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    log(`✅ Commutateur créé: ${sw.name}`, 'success');
+                }
+
+                // Créer des points d'accès
+                const accessPoints = [
+                    {
+                        name: 'AP-B1-RDC',
+                        model: 'Ubiquiti UniFi AP-AC-Pro',
+                        buildingId: buildingId,
+                        status: 'online',
+                        ssid: 'CROUS-WiFi'
+                    },
+                    {
+                        name: 'AP-B1-ET1',
+                        model: 'Ubiquiti UniFi AP-AC-Pro',
+                        buildingId: buildingId,
+                        status: 'online',
+                        ssid: 'CROUS-WiFi'
+                    }
+                ];
+
+                for (const ap of accessPoints) {
+                    await db.collection('accessPoints').add({
+                        ...ap,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    log(`✅ Point d'accès créé: ${ap.name}`, 'success');
+                }
+
+                document.getElementById('equipmentStatus').innerHTML = '<div class="status success">✅ Équipements créés</div>';
+                document.getElementById('interventionsBtn').disabled = false;
+            } catch (error) {
+                log(`❌ Erreur création équipements: ${error.message}`, 'error');
+                document.getElementById('equipmentStatus').innerHTML = '<div class="status error">❌ Erreur création équipements</div>';
+            }
+        }
+
+        async function createInterventions() {
+            try {
+                log('📝 Création des interventions...', 'info');
+                
+                if (buildingIds.length === 0 || userIds.length === 0) {
+                    throw new Error('Bâtiments ou utilisateurs manquants');
+                }
+
+                const buildingId = buildingIds[0];
+                const technicianId = userIds[2]; // Technicien
+
+                const interventions = [
+                    {
+                        title: 'Maintenance préventive - Switch principal',
+                        description: 'Maintenance préventive du switch principal du bâtiment 1',
+                        buildingId: buildingId,
+                        technicianId: technicianId,
+                        status: 'completed',
+                        priority: 'medium',
+                        category: 'maintenance'
+                    },
+                    {
+                        title: 'Remplacement AP défectueux',
+                        description: 'Remplacement du point d\'accès AP-B1-ET1',
+                        buildingId: buildingId,
+                        technicianId: technicianId,
+                        status: 'completed',
+                        priority: 'high',
+                        category: 'reparation'
+                    }
+                ];
+
+                for (const intervention of interventions) {
+                    await db.collection('interventions').add({
+                        ...intervention,
+                        date: new Date(),
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    log(`✅ Intervention créée: ${intervention.title}`, 'success');
+                }
+
+                document.getElementById('interventionsStatus').innerHTML = '<div class="status success">✅ Interventions créées</div>';
+                document.getElementById('testBtn').disabled = false;
+            } catch (error) {
+                log(`❌ Erreur création interventions: ${error.message}`, 'error');
+                document.getElementById('interventionsStatus').innerHTML = '<div class="status error">❌ Erreur création interventions</div>';
+            }
+        }
+
+        async function testComplete() {
+            try {
+                log('🧪 Test complet de la base de données...', 'info');
+                
+                const collections = ['users', 'buildings', 'switches', 'accessPoints', 'interventions'];
+                const results = {};
+
+                for (const collection of collections) {
+                    const snapshot = await db.collection(collection).get();
+                    results[collection] = snapshot.size;
+                    log(`📊 Collection ${collection}: ${snapshot.size} documents`, 'success');
+                }
+
+                const total = Object.values(results).reduce((a, b) => a + b, 0);
+                log(`🎉 Test complet réussi ! Total: ${total} documents créés`, 'success');
+                
+                document.getElementById('testStatus').innerHTML = '<div class="status success">✅ Test complet réussi</div>';
+                
+                log('🚀 Votre application est maintenant prête !', 'success');
+                log('🌐 Accédez à: https://focus-melody-467918-u9.web.app', 'info');
+                
+            } catch (error) {
+                log(`❌ Erreur test complet: ${error.message}`, 'error');
+                document.getElementById('testStatus').innerHTML = '<div class="status error">❌ Erreur test complet</div>';
+            }
+        }
+    </script>
+</body>
+</html>
+
+

@@ -1,0 +1,44 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Utilisateurs : admin uniquement
+    match /users/{userId} {
+      allow read, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    // Logs : admin uniquement
+    match /logs/{logId} {
+      allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow write: if request.auth != null;
+    }
+    // Bâtiments, commutateurs, panneaux, points d'accès : admin et technicien
+    match /buildings/{doc} {
+      allow read, write: if request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'technician']
+      );
+    }
+    match /switches/{doc} {
+      allow read, write: if request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'technician']
+      );
+    }
+    match /patchPanels/{doc} {
+      allow read, write: if request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'technician']
+      );
+    }
+    match /accessPoints/{doc} {
+      allow read, write: if request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'technician']
+      );
+    }
+    // Interventions : admin et gestionnaire peuvent écrire, technicien peut lire
+    match /interventions/{doc} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'gestionnaire'
+      );
+    }
+  }
+}
+

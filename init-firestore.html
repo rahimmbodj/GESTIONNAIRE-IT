@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Initialisation Firestore - CROUS Réseau</title>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, addDoc, doc, setDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        // Configuration Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBloQQvcd1lMANCU5Frdv7XIFB6vLI74Pk",
+            authDomain: "focus-melody-467918-u9.firebaseapp.com",
+            projectId: "focus-melody-467918-u9",
+            storageBucket: "focus-melody-467918-u9.firebasestorage.app",
+            messagingSenderId: "289948248371",
+            appId: "1:289948248371:web:089fc30fdeccb2beecf646",
+            measurementId: "G-3BFXRCW10N"
+        };
+
+        // Initialiser Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Données des bâtiments
+        const buildings = [
+            { id: 'B1', name: 'Bâtiment 1', location: 'Zone A', floors: 4, description: 'Bâtiment principal administratif' },
+            { id: 'B2', name: 'Bâtiment 2', location: 'Zone B', floors: 3, description: 'Bâtiment résidentiel' },
+            { id: 'B3', name: 'Bâtiment 3', location: 'Zone C', floors: 4, description: 'Bâtiment académique' },
+            { id: 'B4', name: 'Bâtiment 4', location: 'Zone D', floors: 3, description: 'Bâtiment de services' },
+            { id: 'B5', name: 'Bâtiment 5', location: 'Zone E', floors: 4, description: 'Bâtiment de recherche' },
+            { id: 'B6', name: 'Bâtiment 6', location: 'Zone F', floors: 3, description: 'Bâtiment culturel' },
+            { id: 'B7', name: 'Bâtiment 7', location: 'Zone G', floors: 4, description: 'Bâtiment sportif' }
+        ];
+
+        // Données des switches
+        const switches = [
+            { id: 'S-B1-1', name: 'Switch B1-1', model: 'USW Pro 24 POE', version: '6.7.17', ip: '192.168.10.1', buildingId: 'B1', location: 'Salle serveur RDC', status: 'active' },
+            { id: 'S-B1-2', name: 'Switch B1-2', model: 'USW Pro 24 POE', version: '6.7.17', ip: '192.168.10.2', buildingId: 'B1', location: 'Salle serveur RDC', status: 'active' },
+            { id: 'S-B2-1', name: 'Switch B2-1', model: 'USW Pro 24 POE', version: '6.7.17', ip: '192.168.20.1', buildingId: 'B2', location: 'Salle serveur RDC', status: 'active' },
+            { id: 'S-B2-2', name: 'Switch B2-2', model: 'USW Pro 24 POE', version: '6.7.17', ip: '192.168.20.2', buildingId: 'B2', location: 'Salle serveur RDC', status: 'active' },
+            { id: 'S-B3-1', name: 'Switch B3-1', model: 'USW Pro 24 POE', version: '6.7.17', ip: '192.168.30.1', buildingId: 'B3', location: 'Salle serveur RDC', status: 'active' },
+            { id: 'S-B3-2', name: 'Switch B3-2', model: 'USW Pro 24 POE', version: '6.7.17', ip: '192.168.30.2', buildingId: 'B3', location: 'Salle serveur RDC', status: 'active' },
+            { id: 'S-B4-1', name: 'Switch B4-1', model: 'USW Pro 24 POE', version: '6.7.17', ip: '192.168.40.1', buildingId: 'B4', location: 'Salle serveur RDC', status: 'active' },
+            { id: 'S-B4-2', name: 'Switch B4-2', model: 'USW Pro 24 POE', version: '6.7.17', ip: '192.168.40.2', buildingId: 'B4', location: 'Salle serveur RDC', status: 'active' },
+            { id: 'S-B5-1', name: 'Switch B5-1', model: 'USW Pro 24 POE', version: '6.7.17', ip: '192.168.50.1', buildingId: 'B5', location: 'Salle serveur RDC', status: 'active' },
+            { id: 'S-B5-2', name: 'Switch B5-2', model: 'USW Pro 24 POE', version: '6.7.17', ip: '192.168.50.2', buildingId: 'B5', location: 'Salle serveur RDC', status: 'active' },
+            { id: 'S-B6-1', name: 'Switch B6-1', model: 'USW Pro 24 POE', version: '6.7.17', ip: '192.168.60.1', buildingId: 'B6', location: 'Salle serveur RDC', status: 'active' },
+            { id: 'S-B6-2', name: 'Switch B6-2', model: 'USW Pro 24 POE', version: '6.7.17', ip: '192.168.60.2', buildingId: 'B6', location: 'Salle serveur RDC', status: 'active' },
+            { id: 'S-B7-1', name: 'Switch B7-1', model: 'USW Pro 24 POE', version: '6.7.17', ip: '192.168.70.1', buildingId: 'B7', location: 'Salle serveur RDC', status: 'active' },
+            { id: 'S-B7-2', name: 'Switch B7-2', model: 'USW Pro 24 POE', version: '6.7.17', ip: '192.168.70.2', buildingId: 'B7', location: 'Salle serveur RDC', status: 'active' }
+        ];
+
+        // Données des panneaux de brassage
+        const patchPanels = [
+            { id: 'PDB-B1-1', name: 'PDB1 Bâtiment 1', buildingId: 'B1', location: 'Salle serveur RDC', ports: 24, type: 'Cat6', status: 'active' },
+            { id: 'PDB-B1-2', name: 'PDB2 Bâtiment 1', buildingId: 'B1', location: 'Salle serveur RDC', ports: 24, type: 'Cat6', status: 'active' },
+            { id: 'PDB-B2-1', name: 'PDB1 Bâtiment 2', buildingId: 'B2', location: 'Salle serveur RDC', ports: 24, type: 'Cat6', status: 'active' },
+            { id: 'PDB-B2-2', name: 'PDB2 Bâtiment 2', buildingId: 'B2', location: 'Salle serveur RDC', ports: 24, type: 'Cat6', status: 'active' },
+            { id: 'PDB-B3-1', name: 'PDB1 Bâtiment 3', buildingId: 'B3', location: 'Salle serveur RDC', ports: 24, type: 'Cat6', status: 'active' },
+            { id: 'PDB-B3-2', name: 'PDB2 Bâtiment 3', buildingId: 'B3', location: 'Salle serveur RDC', ports: 24, type: 'Cat6', status: 'active' },
+            { id: 'PDB-B4-1', name: 'PDB1 Bâtiment 4', buildingId: 'B4', location: 'Salle serveur RDC', ports: 24, type: 'Cat6', status: 'active' },
+            { id: 'PDB-B4-2', name: 'PDB2 Bâtiment 4', buildingId: 'B4', location: 'Salle serveur RDC', ports: 24, type: 'Cat6', status: 'active' },
+            { id: 'PDB-B5-1', name: 'PDB1 Bâtiment 5', buildingId: 'B5', location: 'Salle serveur RDC', ports: 24, type: 'Cat6', status: 'active' },
+            { id: 'PDB-B5-2', name: 'PDB2 Bâtiment 5', buildingId: 'B5', location: 'Salle serveur RDC', ports: 24, type: 'Cat6', status: 'active' },
+            { id: 'PDB-B6-1', name: 'PDB1 Bâtiment 6', buildingId: 'B6', location: 'Salle serveur RDC', ports: 24, type: 'Cat6', status: 'active' },
+            { id: 'PDB-B6-2', name: 'PDB2 Bâtiment 6', buildingId: 'B6', location: 'Salle serveur RDC', ports: 24, type: 'Cat6', status: 'active' },
+            { id: 'PDB-B7-1', name: 'PDB1 Bâtiment 7', buildingId: 'B7', location: 'Salle serveur RDC', ports: 24, type: 'Cat6', status: 'active' },
+            { id: 'PDB-B7-2', name: 'PDB2 Bâtiment 7', buildingId: 'B7', location: 'Salle serveur RDC', ports: 24, type: 'Cat6', status: 'active' }
+        ];
+
+        // Données des points d'accès
+        const accessPoints = [];
+        let apId = 1;
+
+        for (let b = 1; b <= 7; b++) {
+            const levels = ['R', 'E1', 'E2', 'E3'];
+            const apPerLevel = 6;
+            let apCounter = 0;
+
+            for (let l = 0; l < levels.length; l++) {
+                for (let p = 1; p <= apPerLevel; p++) {
+                    apCounter++;
+                    const apName = `B${b}-${levels[l]}${p}`;
+                    const buildingId = `B${b}`;
+
+                    const isPdb1 = apCounter <= 12;
+                    const connectedPdb = isPdb1 ? `PDB-B${b}-1` : `PDB-B${b}-2`;
+                    const portNumber = isPdb1 ? apCounter : apCounter - 12;
+
+                    accessPoints.push({
+                        id: `AP-${apId}`,
+                        name: apName,
+                        mac: `AA:BB:CC:DD:EE:${10 + apId}`,
+                        model: 'UAP AC-M-Pro',
+                        version: '6.7.17',
+                        ip: `192.168.${b}.${apId + 10}`,
+                        buildingId: buildingId,
+                        floor: levels[l],
+                        location: `Étage ${levels[l]}, Position ${p}`,
+                        connectedTo: `${connectedPdb} - Port ${portNumber}`,
+                        security: 'WPA2/WPA3',
+                        status: 'active',
+                        signalStrength: 'excellent',
+                        connectedClients: Math.floor(Math.random() * 20) + 1
+                    });
+
+                    apId++;
+                }
+            }
+        }
+
+        // Données des interventions
+        const interventions = [
+            {
+                buildingId: 'B1',
+                date: '2024-01-15',
+                description: 'Remplacement du point d\'accès B1-R1 défectueux. Signal faible détecté.',
+                status: 'completed',
+                priority: 'high',
+                technician: 'Technicien Principal',
+                duration: '2h',
+                parts: ['UAP AC-M-Pro', 'Câble Cat6']
+            },
+            {
+                buildingId: 'B3',
+                date: '2024-01-20',
+                description: 'Diagnostic de connexion lent sur le PDB2. Nettoyage des connecteurs effectué.',
+                status: 'completed',
+                priority: 'medium',
+                technician: 'Technicien Principal',
+                duration: '1h30',
+                parts: ['Connecteurs RJ45', 'Nettoyant']
+            },
+            {
+                buildingId: 'B2',
+                date: '2024-01-25',
+                description: 'Mise à jour du firmware du switch B2-1. Version 6.7.17 installée.',
+                status: 'completed',
+                priority: 'low',
+                technician: 'Technicien Principal',
+                duration: '45min',
+                parts: []
+            }
+        ];
+
+        // Fonction d'initialisation
+        async function initializeFirestore() {
+            try {
+                console.log('🚀 Début de l\'initialisation de Firestore...');
+                
+                // Ajouter les bâtiments
+                console.log('📁 Ajout des bâtiments...');
+                for (const building of buildings) {
+                    await setDoc(doc(db, 'buildings', building.id), building);
+                    console.log(`✅ Bâtiment ajouté: ${building.name}`);
+                }
+
+                // Ajouter les switches
+                console.log('🔌 Ajout des switches...');
+                for (const switchItem of switches) {
+                    await setDoc(doc(db, 'switches', switchItem.id), switchItem);
+                    console.log(`✅ Switch ajouté: ${switchItem.name}`);
+                }
+
+                // Ajouter les panneaux de brassage
+                console.log('🔗 Ajout des panneaux de brassage...');
+                for (const panel of patchPanels) {
+                    await setDoc(doc(db, 'patchPanels', panel.id), panel);
+                    console.log(`✅ Panneau ajouté: ${panel.name}`);
+                }
+
+                // Ajouter les points d'accès
+                console.log('📶 Ajout des points d\'accès...');
+                for (const ap of accessPoints) {
+                    await setDoc(doc(db, 'accessPoints', ap.id), ap);
+                    console.log(`✅ Point d'accès ajouté: ${ap.name}`);
+                }
+
+                // Ajouter les interventions
+                console.log('📋 Ajout des interventions...');
+                for (const intervention of interventions) {
+                    await addDoc(collection(db, 'interventions'), intervention);
+                    console.log(`✅ Intervention ajoutée: ${intervention.description.substring(0, 50)}...`);
+                }
+
+                console.log('🎉 Initialisation terminée avec succès !');
+                document.getElementById('status').innerHTML = `
+                    <div style="color: green; font-weight: bold;">
+                        ✅ Initialisation terminée avec succès !<br>
+                        📊 ${buildings.length} bâtiments<br>
+                        🔌 ${switches.length} switches<br>
+                        🔗 ${patchPanels.length} panneaux de brassage<br>
+                        📶 ${accessPoints.length} points d'accès<br>
+                        📋 ${interventions.length} interventions
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error('❌ Erreur lors de l\'initialisation:', error);
+                document.getElementById('status').innerHTML = `
+                    <div style="color: red; font-weight: bold;">
+                        ❌ Erreur lors de l'initialisation:<br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Exposer la fonction globalement
+        window.initializeFirestore = initializeFirestore;
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .info {
+            background: #e8f4fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3498db;
+        }
+        .warning {
+            background: #fff3cd;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ffc107;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        button:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3498db;
+        }
+        .stat-label {
+            color: #6c757d;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Initialisation Firestore - CROUS Réseau</h1>
+        
+        <div class="info">
+            <h3>📋 Ce script va créer :</h3>
+            <ul>
+                <li><strong>7 bâtiments</strong> avec leurs informations détaillées</li>
+                <li><strong>14 switches</strong> (2 par bâtiment) avec configurations réseau</li>
+                <li><strong>14 panneaux de brassage</strong> (2 par bâtiment) avec 24 ports chacun</li>
+                <li><strong>168 points d'accès</strong> (24 par bâtiment) avec nomenclature B1-R1, B1-E11, etc.</li>
+                <li><strong>3 interventions</strong> d'exemple avec historique</li>
+            </ul>
+        </div>
+
+        <div class="warning">
+            <h3>⚠️ Attention :</h3>
+            <p>Ce script va <strong>écraser</strong> toutes les données existantes dans les collections Firestore. Assurez-vous d'avoir sauvegardé vos données importantes.</p>
+        </div>
+
+        <button onclick="initializeFirestore()" id="initBtn">
+            🚀 Initialiser la Base de Données
+        </button>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number">7</div>
+                <div class="stat-label">Bâtiments</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">14</div>
+                <div class="stat-label">Switches</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">14</div>
+                <div class="stat-label">Panneaux</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">168</div>
+                <div class="stat-label">Points d'accès</div>
+            </div>
+        </div>
+
+        <div id="status">
+            <p>Cliquez sur le bouton pour initialiser la base de données...</p>
+        </div>
+    </div>
+</body>
+</html>
