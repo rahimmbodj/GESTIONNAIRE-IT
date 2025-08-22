@@ -1,172 +1,246 @@
-import React, { useState } from 'react';
-import ResponsiveTable from './ResponsiveTable';
-import ResponsiveForm, { FormField, ResponsiveButton } from './ResponsiveForm';
-import { PlusCircle, Edit, Trash } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { PlusCircle, Edit, Trash, Search } from 'lucide-react';
+import Modal from './Modal';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { db } from '../firebase';
+import toast from 'react-hot-toast';
 
 const Buildings = () => {
   const [buildings, setBuildings] = useState([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedBuilding, setSelectedBuilding] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  const headers = [
-    { 
-      key: 'name', 
-      label: 'Nom du bâtiment'
-    },
-    { 
-      key: 'location', 
-      label: 'Emplacement' 
-    },
-    { 
-      key: 'floors', 
-      label: 'Nombre d\'étages'
-    },
-    { 
-      key: 'status', 
-      label: 'État',
-      render: (value) => (
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-          value === 'active' 
-            ? 'bg-green-100 text-green-800'
-            : 'bg-gray-100 text-gray-800'
-        }`}>
-          {value === 'active' ? 'Actif' : 'Inactif'}
-        </span>
-      )
-    },
-    {
-      key: 'actions',
-      label: 'Actions',
-      render: (_, building) => (
-        <div className="flex space-x-2">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setSelectedBuilding(building);
-              setIsAddModalOpen(true);
-            }}
-            className="p-2 text-blue-600 hover:text-blue-800 rounded-full hover:bg-blue-50"
-          >
-            <Edit className="w-4 h-4" />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDelete(building.id);
-            }}
-            className="p-2 text-red-600 hover:text-red-800 rounded-full hover:bg-red-50"
-          >
-            <Trash className="w-4 h-4" />
-          </button>
-        </div>
-      )
+  const fetchBuildings = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'buildings'));
+      const buildingsData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setBuildings(buildingsData);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des bâtiments:', error);
+      toast.error('Erreur lors du chargement des bâtiments');
+    } finally {
+      setLoading(false);
     }
-  ];
-
-  // Gestion des actions
-  const handleAdd = (data) => {
-    // Logique d'ajout
-    setIsAddModalOpen(false);
   };
 
-  const handleDelete = async (id) => {
-    // Logique de suppression
+  useEffect(() => {
+    fetchBuildings();
+  }, []);
+
+  const handleSubmit = async (formData) => {
+    try {
+      if (selectedBuilding) {
+        // Mise à jour
+        await updateDoc(doc(db, 'buildings', selectedBuilding.id), formData);
+        toast.success('Bâtiment mis à jour avec succès');
+      } else {
+        // Création
+        await addDoc(collection(db, 'buildings'), formData);
+        toast.success('Bâtiment ajouté avec succès');
+      }
+      setIsAddModalOpen(false);
+      fetchBuildings();
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      toast.error('Erreur lors de la sauvegarde du bâtiment');
+    }
   };
+
+  const handleDelete = async (buildingId) => {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce bâtiment ?')) {
+      try {
+        await deleteDoc(doc(db, 'buildings', buildingId));
+        toast.success('Bâtiment supprimé avec succès');
+        fetchBuildings();
+      } catch (error) {
+        console.error('Erreur lors de la suppression:', error);
+        toast.error('Erreur lors de la suppression du bâtiment');
+      }
+    }
+  };
+
+  const filteredBuildings = buildings.filter(building =>
+    building.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    building.location.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <div className="space-y-6">
-      {/* En-tête avec bouton d'ajout */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Bâtiments</h2>
-          <p className="mt-1 text-sm text-gray-500">
-            Gérez les bâtiments du campus
-          </p>
+    <div className="glass-card p-6">
+      <div className="flex flex-col space-y-6">
+        {/* Header */}
+        <div className="flex justify-between items-center">
+          <h1 className="glass-title">Bâtiments</h1>
+          <button
+            onClick={() => {
+              setSelectedBuilding(null);
+              setIsAddModalOpen(true);
+            }}
+            className="glass-button inline-flex items-center"
+          >
+            <PlusCircle className="w-5 h-5 mr-2" />
+            Ajouter un bâtiment
+          </button>
         </div>
-        <ResponsiveButton
-          onClick={() => {
-            setSelectedBuilding(null);
-            setIsAddModalOpen(true);
-          }}
-          className="flex items-center"
-        >
-          <PlusCircle className="w-5 h-5 mr-2" />
-          Ajouter un bâtiment
-        </ResponsiveButton>
+
+        {/* Search bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <input
+            type="text"
+            placeholder="Rechercher un bâtiment..."
+            className="glass-input pl-10 w-full"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        {/* Table */}
+        <div className="overflow-x-auto">
+          <table className="glass-table">
+            <thead>
+              <tr>
+                <th>Nom du bâtiment</th>
+                <th>Emplacement</th>
+                <th>Nombre d'étages</th>
+                <th>État</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredBuildings.map((building) => (
+                <tr key={building.id}>
+                  <td>{building.name}</td>
+                  <td>{building.location}</td>
+                  <td>{building.floors}</td>
+                  <td>
+                    <span className={`px-2 py-1 rounded-full text-sm ${
+                      building.status === 'active'
+                        ? 'bg-green-500/20 text-green-500'
+                        : 'bg-gray-500/20 text-gray-300'
+                    }`}>
+                      {building.status === 'active' ? 'Actif' : 'Inactif'}
+                    </span>
+                  </td>
+                  <td>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => {
+                          setSelectedBuilding(building);
+                          setIsAddModalOpen(true);
+                        }}
+                        className="p-2 text-blue-400 hover:text-blue-300"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(building.id)}
+                        className="p-2 text-red-400 hover:text-red-300"
+                      >
+                        <Trash className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* Table responsive */}
-      <div className="bg-white shadow-sm rounded-lg">
-        <ResponsiveTable
-          headers={headers}
-          data={buildings}
-          keyField="id"
-          onRowClick={(building) => {
-            setSelectedBuilding(building);
-            setIsAddModalOpen(true);
-          }}
-        />
-      </div>
-
-      {/* Modal d'ajout/modification */}
+      {/* Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-25 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-            <div className="p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                {selectedBuilding ? 'Modifier le bâtiment' : 'Ajouter un bâtiment'}
-              </h3>
-              <ResponsiveForm
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleAdd({
-                    // Récupérer les données du formulaire
-                  });
-                }}
-              >
-                <FormField label="Nom du bâtiment">
-                  <input
-                    type="text"
-                    className="form-input"
-                    defaultValue={selectedBuilding?.name}
-                    required
-                  />
-                </FormField>
-
-                <FormField label="Emplacement">
-                  <input
-                    type="text"
-                    className="form-input"
-                    defaultValue={selectedBuilding?.location}
-                    required
-                  />
-                </FormField>
-
-                <FormField label="Nombre d'étages">
-                  <input
-                    type="number"
-                    className="form-input"
-                    defaultValue={selectedBuilding?.floors}
-                    required
-                  />
-                </FormField>
-
-                <div className="flex justify-end gap-3 col-span-full mt-6">
-                  <ResponsiveButton
-                    type="button"
-                    variant="secondary"
-                    onClick={() => setIsAddModalOpen(false)}
-                  >
-                    Annuler
-                  </ResponsiveButton>
-                  <ResponsiveButton type="submit">
-                    {selectedBuilding ? 'Modifier' : 'Ajouter'}
-                  </ResponsiveButton>
-                </div>
-              </ResponsiveForm>
+        <Modal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          title={selectedBuilding ? "Modifier le bâtiment" : "Ajouter un bâtiment"}
+        >
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            const formData = {
+              name: e.target.name.value,
+              location: e.target.location.value,
+              floors: parseInt(e.target.floors.value),
+              status: e.target.status.value
+            };
+            handleSubmit(formData);
+          }} className="glass-form">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Nom du bâtiment
+              </label>
+              <input
+                type="text"
+                name="name"
+                defaultValue={selectedBuilding?.name}
+                required
+                className="glass-input w-full"
+              />
             </div>
-          </div>
-        </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Emplacement
+              </label>
+              <input
+                type="text"
+                name="location"
+                defaultValue={selectedBuilding?.location}
+                required
+                className="glass-input w-full"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Nombre d'étages
+              </label>
+              <input
+                type="number"
+                name="floors"
+                defaultValue={selectedBuilding?.floors}
+                required
+                min="1"
+                className="glass-input w-full"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                État
+              </label>
+              <select
+                name="status"
+                defaultValue={selectedBuilding?.status || 'active'}
+                className="glass-select w-full"
+              >
+                <option value="active">Actif</option>
+                <option value="inactive">Inactif</option>
+              </select>
+            </div>
+            
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                type="button"
+                onClick={() => setIsAddModalOpen(false)}
+                className="glass-button bg-gray-500/20"
+              >
+                Annuler
+              </button>
+              <button
+                type="submit"
+                className="glass-button bg-blue-500/20"
+              >
+                {selectedBuilding ? "Modifier" : "Ajouter"}
+              </button>
+            </div>
+          </form>
+        </Modal>
       )}
     </div>
   );

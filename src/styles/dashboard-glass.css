@@ -1,0 +1,124 @@
+.dashboard-container {
+  min-height: 100vh;
+  padding: 2rem;
+  background: linear-gradient(45deg, #0f172a, #1e293b);
+  color: white;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.glass-stat-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 15px;
+  padding: 1.5rem;
+  transition: transform 0.3s ease;
+}
+
+.glass-stat-card:hover {
+  transform: translateY(-5px);
+}
+
+.glass-stat-card .icon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  opacity: 0.8;
+}
+
+.glass-stat-card .title {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  margin-bottom: 0.5rem;
+}
+
+.glass-stat-card .value {
+  font-size: 1.8rem;
+  font-weight: bold;
+}
+
+.glass-chart-container {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 15px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.glass-interventions {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 15px;
+  padding: 2rem;
+}
+
+.interventions-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.intervention-item {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: transform 0.2s ease;
+}
+
+.intervention-item:hover {
+  transform: translateX(5px);
+}
+
+.dashboard-title {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 2rem;
+  color: white;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Animation d'arrière-plan */
+.dashboard-bg-circle {
+  position: fixed;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.03);
+  z-index: 0;
+}
+
+.circle-1 {
+  width: 400px;
+  height: 400px;
+  top: -100px;
+  right: -100px;
+  animation: float 15s ease-in-out infinite;
+}
+
+.circle-2 {
+  width: 300px;
+  height: 300px;
+  bottom: -50px;
+  left: -50px;
+  animation: float 20s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate(30px, 30px) rotate(180deg);
+  }
+}
